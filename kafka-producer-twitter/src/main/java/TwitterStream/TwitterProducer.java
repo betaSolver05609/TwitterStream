@@ -11,7 +11,6 @@ import com.twitter.hbc.core.processor.StringDelimitedProcessor;
 import com.twitter.hbc.httpclient.auth.Authentication;
 import com.twitter.hbc.httpclient.auth.OAuth1;
 import org.apache.kafka.clients.producer.*;
-import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.util.List;
@@ -50,6 +49,7 @@ public class TwitterProducer {
             String msg = null;
             try {
                 msg = msgQueue.poll(5, TimeUnit.SECONDS);
+                System.out.println(msg);
             } catch (InterruptedException e) {
                 e.printStackTrace();
                 client.stop();
