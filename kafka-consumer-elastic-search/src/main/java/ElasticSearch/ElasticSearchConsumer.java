@@ -1,5 +1,7 @@
 package ElasticSearch;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -33,14 +35,22 @@ public class ElasticSearchConsumer {
             ConsumerRecords<String, String> records=consumer.poll(Duration.ofMillis(100));
             for(ConsumerRecord record: records){
                 //Insert into ElasticSearch
+
+                //2 strategies
+                //kafka generic id
+                //String id=record.topic()+record.partition()+record.offset();
+
+                //twitter feed specific id
+                String id=extractIdFromTweet(record.value().toString());
+
                 JSONObject jsonRecord=new JSONObject();
                 String msg=record.value().toString();
-
-                IndexRequest indexRequest=new IndexRequest("twitter", "tweets")
+                //passing id to make consumer idempotent
+                IndexRequest indexRequest=new IndexRequest("twitter", "tweets", id)
                         .source(msg, XContentType.JSON);
                 IndexResponse response=client.index(indexRequest);
-                String id= response.getId();
-                System.out.println(id);
+                String responseId= response.getId();
+                System.out.println(responseId);
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -67,6 +77,15 @@ public class ElasticSearchConsumer {
         KafkaConsumer<String, String> consumer=new KafkaConsumer<String, String>(properties);
         consumer.subscribe(Arrays.asList(topic));
         return consumer;
+    }
+
+    private static JsonParser jsonParser=new JsonParser();
+
+    public static String extractIdFromTweet(String tweetJson) {
+        //gson library
+        String id=JsonParser.parseString(tweetJson).getAsJsonObject().get("id_str").getAsString();
+        return id;
+
     }
 
     public static RestHighLevelClient createClient() {
